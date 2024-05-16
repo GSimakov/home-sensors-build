@@ -1,0 +1,62 @@
+version: "3"
+services:
+  db:
+    image: postgres:15.0
+    container_name: postgres
+    restart: unless-stopped
+
+    ports:
+      - "8050:5432"
+      
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_MULTIPLE_DATABASES: conf, data
+
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      
+    volumes:
+      - ./init-multi-postgres-databases.sh:/docker-entrypoint-initdb.d/init-multi-postgres-databases.sh
+      
+      
+  conf-service:
+    image: goshasimakov/home-sensors-configuration:latest
+    ports:
+      - "8051:8000"
+
+    restart: unless-stopped
+
+    depends_on:
+      - db
+    environment:
+      ASYNC_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db/conf
+      DATABASE_URL: postgresql://postgres:postgres@db/conf
+      
+      
+  data-service:
+    image: goshasimakov/home-sensors-data:latest
+    ports:
+      - "8052:8001"
+
+    restart: unless-stopped
+
+    depends_on:
+      - db
+
+    environment:
+      ASYNC_DATABASE_URL: postgresql+asyncpg://postgres:postgres@db/data
+      DATABASE_URL: postgresql://postgres:postgres@db/data
+
+  client:
+    image: goshasimakov/home-sensors-client:latest
+    ports:
+      - "3000:3000"
+
+    restart: unless-stopped
+
+    depends_on:
+      - data-service
+      - conf-service
+
+    environment:
+      REACT_APP_MEASUREMENTS_SERVER_URL: http://localhost:8052/
