@@ -60,3 +60,4 @@ services:
 
     environment:
       REACT_APP_MEASUREMENTS_SERVER_URL: http://localhost:8052/
+      REACT_APP_CONFIGURATION_SERVER_URL: http://localhost:8051/
